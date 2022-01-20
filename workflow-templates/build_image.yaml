@@ -19,7 +19,7 @@ on:
 jobs:
   build-image:
     name: Build, Scan Image and Push on PR merge
-    runs-on: [self-hosted, linux, build]
+    runs-on: ubuntu-latest
     defaults:
       run:
         shell: bash
