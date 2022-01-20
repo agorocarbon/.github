@@ -8,15 +8,14 @@ on:
     types:
       - opened
       - synchronize
+  pull_request_target:
+    types:
       - closed
   workflow_call:
     inputs:
       TEST_TYPE:
         required: true
-        type: choice
-        options:
-          - e2e
-          - cov
+        type: string # cov or e2e
     secrets:    
       DB_PASSWORD:
         required: true
