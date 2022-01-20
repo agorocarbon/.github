@@ -1,0 +1,10 @@
+{
+  "name": "Nodejs Env Setup",
+  "description": "Agoro nodejs yarn setup",
+  "categories": [
+      "node"
+  ],
+  "filePatterns": [
+      "package.json$"
+  ]
+}

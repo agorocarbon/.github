@@ -1,0 +1,7 @@
+{
+  "name": "Nodejs Env Setup",
+  "description": "Agoro nodejs yarn setup",
+  "filePatterns": [
+      "infra/helmfile.yaml$"
+  ]
+}
