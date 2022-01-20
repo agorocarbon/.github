@@ -19,7 +19,6 @@ on:
 jobs:
   build-image:
     name: Build, Scan Image and Push on PR merge
-    container: docker:dind      
     runs-on: [self-hosted, linux, build]
     defaults:
       run:
