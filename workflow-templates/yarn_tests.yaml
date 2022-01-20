@@ -28,7 +28,6 @@ on:
 jobs:
   tests:
     name: Unit Tests
-    needs: setup-env
     environment: Testing
     env:
       TEST_TYPE: cov

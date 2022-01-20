@@ -1,6 +1,6 @@
 {
-  "name": "Nodejs Env Setup",
-  "description": "Agoro nodejs yarn setup",
+  "name": "Nodejs Env Tests",
+  "description": "Agoro nodejs yarn test",
   "categories": [
       "node"
   ],
