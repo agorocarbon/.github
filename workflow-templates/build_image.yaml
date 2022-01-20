@@ -4,10 +4,7 @@ on:
     inputs:
       AWS_REGION:
         required: true
-        type: choice
-        options:
-          - eu-central-1
-          - us-east-1
+        type: string
       AWS_ACCOUNT_ID:
         required: true
         type: string
@@ -22,7 +19,7 @@ on:
 jobs:
   build-image:
     name: Build, Scan Image and Push on PR merge
-    image: docker:dind      
+    container: docker:dind      
     runs-on: [self-hosted, linux, build]
     defaults:
       run:
