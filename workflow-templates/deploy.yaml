@@ -1,13 +1,13 @@
 name: Deploy
 on:
+  pull_request_target:
+    types:
+      - closed
   workflow_call:
     inputs:
       AWS_REGION:
         required: true
-        type: choice
-        options:
-          - eu-central-1
-          - us-east-1
+        type: string
       AWS_ACCOUNT_ID:
         required: true
         type: string
@@ -23,7 +23,8 @@ on:
     secrets:
       GITHUB_TOKEN:
         required: true
-deploy:
+ jobs:
+  deploy:
     name: Deploy
     runs-on: [self-hosted, linux, deploy]
     defaults:
