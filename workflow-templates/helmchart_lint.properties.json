@@ -1,6 +1,6 @@
 {
-  "name": "Nodejs Env Setup",
-  "description": "Agoro nodejs yarn setup",
+  "name": "Helm Chart Lint",
+  "description": "Helm Chart Linter",
   "filePatterns": [
       "infra/helmfile.yaml$"
   ]
