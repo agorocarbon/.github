@@ -1,0 +1,10 @@
+{
+  "name": "Nodejs Env Lint(yarn)",
+  "description": "Agoro nodejs yarn linter",
+  "categories": [
+      "node"
+  ],
+  "filePatterns": [
+      ".eslintrc.js"
+  ]
+}
