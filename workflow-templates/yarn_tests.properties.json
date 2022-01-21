@@ -1,5 +1,5 @@
 {
-  "name": "Nodejs Env Tests",
+  "name": "Nodejs Env Tests (yarn)",
   "description": "Agoro nodejs yarn test",
   "categories": [
       "node"
