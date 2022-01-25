@@ -9,7 +9,6 @@ on:
       - opened
       - synchronize
       - closed
-  workflow_call:
   
 jobs:
   setup-env:

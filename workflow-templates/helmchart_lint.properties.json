@@ -1,7 +1,0 @@
-{
-  "name": "Helm Chart Lint",
-  "description": "Helm Chart Linter",
-  "filePatterns": [
-      "infra/helmfile.yaml$"
-  ]
-}

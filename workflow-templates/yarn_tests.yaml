@@ -11,18 +11,6 @@ on:
   pull_request_target:
     types:
       - closed
-  workflow_call:
-    inputs:
-      TEST_TYPE:
-        required: true
-        type: string # cov or e2e
-    secrets:    
-      DB_PASSWORD:
-        required: true
-      GITHUB_TOKEN:
-        required: true
-      SONAR_TOKEN:
-        required: true
       
 jobs:
   tests:
@@ -117,3 +105,48 @@ jobs:
     - name: SonarCloud Scan
       uses: sonarsource/sonarcloud-github-action@master
       continue-on-error: true
+
+  name: Scan Image
+  runs-on: ubuntu-latest
+  steps:
+    - name: Scan Image for Security
+      image: docker
+      id: security-scan
+      uses: azure/container-scan@v0
+      with:
+        image-name: ${{ secrets.REGISTRY }}/${{ secrets.IMAGE_NAME }}:${{ github.sha }}
+      continue-on-error: true
+
+    - name: Format scan output
+      run: |
+        pip3 install json2html
+        python3 agorocarbon/.github/convert2html.py ${{ steps.security-scan.outputs.scan-report-path }} > ${{ github.workspace }}/scan.html
+
+    - name: Read Scan result html
+      if: input.PULL_REQUEST
+      id: package
+      uses: juliangruber/read-file-action@v1
+      with:
+        path: ${{ github.workspace }}/scan.html
+
+    - name: Post Scan Results to PR
+      if: input.PULL_REQUEST
+      uses: actions/github-script@v5.0.0
+      env:
+        SCAN: ${{ steps.package.outputs.content }}
+        RESULT: ${{ steps.security-scan.outcome }}
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: process.env.SCAN
+          })
+          github.rest.issues.addLabels({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            labels: ["Security:".concat(process.env.RESULT)]
+          })
