@@ -6,9 +6,12 @@ on:
     branches-ignore:
       - '**'
 
+env:
+  IMAGE_NAME: <image name for ecr>
+
 jobs:
   get_env:
-    name: Get Environment
+    name: Set Env
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -19,46 +22,45 @@ jobs:
     steps:
       - name: Set env variable
         run: |
-          if [[ "${{ contains(inputs.TAG,'-') }}" == "true" ]]
-          then
             mapfile -d \- -t temp < <(echo ${{ github.ref_name }})
             echo "::set-output name=ENV_NAME::${temp[0]}"
             echo "::set-output name=TAG::${temp[1]}"
-          else
-            echo "::set-output name=ENV_NAME::stage"
-            echo "::set-output name=TAG::${{ github.ref_name }}"
-          fi
         id: get_env
 
+  retag_image:
+    name: Tag docker sha with ${{ github.ref_name }}
+    default:
+      run:
+        shell: bash
+    steps:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-region: ${{ secrets.AWS_REGION }}
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/ecr-image-push
+          role-duration-seconds: 3600
+          role-session-name: GithubActions-PushImage
+      
+      - name: Retag
+        run: |
+          docker pull ${{ secrets.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          docker tag ${{ secrets.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} ${{ secrets.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
+          docker push ${{ secrets.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
 
-  name: Scan Image
-  runs-on: ubuntu-latest
-  steps:
-    - name: Read Scan result html
-      if: input.PULL_REQUEST
-      id: package
-      uses: juliangruber/read-file-action@v1
-      with:
-        path: ${{ github.workspace }}/scan.html
-
-    - name: Post Scan Results to PR
-      if: input.PULL_REQUEST
-      uses: actions/github-script@v5.0.0
-      env:
-        SCAN: ${{ steps.package.outputs.content }}
-        RESULT: ${{ steps.security-scan.outcome }}
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        script: |
-          github.rest.issues.createComment({
-            issue_number: context.issue.number,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body: process.env.SCAN
-          })
-          github.rest.issues.addLabels({
-            issue_number: context.issue.number,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            labels: ["Security:".concat(process.env.RESULT)]
-          })
+  deploy:
+    name: Deploy App
+    environment: ${{ needs.get_env.outputs.ENV_NAME }}
+    needs:
+      - get_env
+      - retag_image
+    uses: agorocarbon/reusable-workflows/.github/workflows/deploy.yaml@main
+    with:
+      IMAGE_NAME: ${{ env.IMAGE_NAME }}
+      IMAGE_TAG: ${{ github.ref_name }}
+      USERNAME: ${{ github.actor }}
+    secrets:
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+      REGISTRY: ${{ secrets.REGISTRY }}
+      CLUSTER_NAME: ${{ secrets. EKS_CLUSTER_NAME }}

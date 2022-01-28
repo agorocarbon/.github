@@ -1,0 +1,10 @@
+{
+  "name": "Deploy Nodejs App (yarn)",
+  "description": "Deploy nodejs yarn App",
+  "categories": [
+      "node"
+  ],
+  "filePatterns": [
+      ".eslintrc.js"
+  ]
+}

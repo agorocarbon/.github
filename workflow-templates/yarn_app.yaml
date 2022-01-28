@@ -13,37 +13,9 @@ on:
       - closed
 
 env:
-  IMAGE_NAME:
+  IMAGE_NAME: <name of the ecr image>
 
 jobs:
-  setup_env:
-    name: Setup Env
-    runs-on: ubuntu-latest
-    container:
-      image: node:14
-    defaults:
-      run:
-        shell: bash
-    outputs:
-      output1: ${{ steps.step1.outputs.test }}
-    steps:
-    - name: Get Code
-      uses: actions/checkout@v2
-
-    - name: Get yarn cache directory path
-      run: echo "YARN_CACHE_DIR=$(yarn cache dir)" >> $GITHUB_ENV
-
-    - name: Cache node modules
-      uses: actions/cache@v2
-      with:
-        path: ${{ env.YARN_CACHE_DIR }}
-        key: ${{ github.repository }}-${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-        restore-keys: |
-          ${{ github.repository }}-${{ runner.os }}-yarn-
-
-    - name: Install node dependencies to populate cache
-      run: yarn install --frozen-lockfile
-
   code_linter:
     name: Code Linter
     needs: 
@@ -79,7 +51,7 @@ jobs:
     name: Unit Tests
     environment: Testing
     needs:
-      - setup_env
+      - code_linter
     uses: agorocarbon/reusable-workflows/.github/workflows/tests_nodejs.yaml@main
     with:
       TEST_TYPE: cov
@@ -88,7 +60,7 @@ jobs:
     name: E2E Tests
     environment: Testing
     needs:
-      - setup_env
+      - code_linter
     uses: agorocarbon/reusable-workflows/.github/workflows/tests_nodejs.yaml@main
     with:
       TEST_TYPE: e2e
@@ -108,8 +80,49 @@ jobs:
       AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
       REGISTRY: ${{ secrets.REGISTRY }}
 
+  scan_image_results:
+    name: Post Security scan output to PR 
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' || github.event_name == 'pull_request_target'
+    steps:
+      - name: Download Infra/Scan Results
+        uses: actions/download-artifact@v2
+        with:
+          name: security-scan
+          path: ${{ github.workspace }}
+
+      - name: Read Scan result html
+        if: input.PULL_REQUEST
+        id: package
+        uses: juliangruber/read-file-action@v1
+        with:
+          path: ${{ github.workspace }}/scan.html
+
+      - name: Post Scan Results to PR
+        if: input.PULL_REQUEST
+        uses: actions/github-script@v5.0.0
+        env:
+          SCAN: ${{ steps.package.outputs.content }}
+          RESULT: ${{ jobs.build_image.outputs.SCAN_OUTCOME }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: process.env.SCAN
+            })
+            github.rest.issues.addLabels({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: ["Security:".concat(process.env.RESULT)]
+            })
+
   deploy:
     name: Deploy App
+    if: github.event_name == 'pull_request_target' && github.event.pull_request.merged == true
     environment: Staging
     needs:
       - build_image
