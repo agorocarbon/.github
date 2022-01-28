@@ -8,10 +8,15 @@ on:
     types:
       - opened
       - synchronize
+  pull_request_target:
+    types:    
       - closed
-  
+
+env:
+  IMAGE_NAME:
+
 jobs:
-  setup-env:
+  setup_env:
     name: Setup Env
     runs-on: ubuntu-latest
     container:
@@ -39,9 +44,10 @@ jobs:
     - name: Install node dependencies to populate cache
       run: yarn install --frozen-lockfile
 
-  code-linter:
+  code_linter:
     name: Code Linter
-    needs: setup-env
+    needs: 
+      - setup_env
     runs-on: ubuntu-latest
     container: node:14
     defaults:
@@ -68,3 +74,53 @@ jobs:
 
     - name: Code Quality Run Lint
       run: yarn lint
+
+  unit_tests:
+    name: Unit Tests
+    environment: Testing
+    needs:
+      - setup_env
+    uses: agorocarbon/reusable-workflows/.github/workflows/tests_nodejs.yaml@main
+    with:
+      TEST_TYPE: cov
+
+  e2e_tests:
+    name: E2E Tests
+    environment: Testing
+    needs:
+      - setup_env
+    uses: agorocarbon/reusable-workflows/.github/workflows/tests_nodejs.yaml@main
+    with:
+      TEST_TYPE: e2e
+  
+  build_image:
+    name: Build Image
+    needs:
+      - unit_tests
+      - e2e_tests
+    uses: agorocarbon/reusable-workflows/.github/workflows/build_image.yaml@main
+    with:
+      IMAGE_NAME: ${{ env.IMAGE_NAME }}
+      IMAGE_TAG: ${{ github.sha }}
+    secrets:
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+      REGISTRY: ${{ secrets.REGISTRY }}
+
+  deploy:
+    name: Deploy App
+    environment: Production
+    needs:
+      - build_image
+    uses: agorocarbon/reusable-workflows/.github/workflows/deploy.yaml@main
+    with:
+      IMAGE_NAME: ${{ env.IMAGE_NAME }}
+      IMAGE_TAG: ${{ github.sha }}
+      USERNAME: ${{ github.actor }}
+    secrets:
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+      REGISTRY: ${{ secrets.REGISTRY }}
+      CLUSTER_NAME: ${{ secrets. EKS_CLUSTER_NAME }}

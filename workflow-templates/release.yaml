@@ -1,0 +1,64 @@
+name: Release
+on:
+  push:
+    tags:
+      - '**'
+    branches-ignore:
+      - '**'
+
+jobs:
+  get_env:
+    name: Get Environment
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    outputs:
+      ENV_NAME: ${{ steps.get_env.outputs.ENV_NAME }}
+      TAG: ${{ steps.get_env.outputs.TAG }}
+    steps:
+      - name: Set env variable
+        run: |
+          if [[ "${{ contains(inputs.TAG,'-') }}" == "true" ]]
+          then
+            mapfile -d \- -t temp < <(echo ${{ github.ref_name }})
+            echo "::set-output name=ENV_NAME::${temp[0]}"
+            echo "::set-output name=TAG::${temp[1]}"
+          else
+            echo "::set-output name=ENV_NAME::stage"
+            echo "::set-output name=TAG::${{ github.ref_name }}"
+          fi
+        id: get_env
+
+
+  name: Scan Image
+  runs-on: ubuntu-latest
+  steps:
+    - name: Read Scan result html
+      if: input.PULL_REQUEST
+      id: package
+      uses: juliangruber/read-file-action@v1
+      with:
+        path: ${{ github.workspace }}/scan.html
+
+    - name: Post Scan Results to PR
+      if: input.PULL_REQUEST
+      uses: actions/github-script@v5.0.0
+      env:
+        SCAN: ${{ steps.package.outputs.content }}
+        RESULT: ${{ steps.security-scan.outcome }}
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: process.env.SCAN
+          })
+          github.rest.issues.addLabels({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            labels: ["Security:".concat(process.env.RESULT)]
+          })

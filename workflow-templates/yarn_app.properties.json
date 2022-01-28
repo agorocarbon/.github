@@ -1,6 +1,6 @@
 {
-  "name": "Nodejs Env Lint (yarn)",
-  "description": "Agoro nodejs yarn linter",
+  "name": "Nodejs App (yarn)",
+  "description": "Agoro nodejs yarn App",
   "categories": [
       "node"
   ],
