@@ -29,6 +29,7 @@ jobs:
 
   retag_image:
     name: Tag docker sha with ${{ github.ref_name }}
+    runs-on: ubuntu-latest
     default:
       run:
         shell: bash
