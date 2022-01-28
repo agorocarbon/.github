@@ -49,7 +49,6 @@ jobs:
 
   deploy:
     name: Deploy App
-    environment: ${{ needs.get_env.outputs.ENV_NAME }}
     needs:
       - get_env
       - retag_image
