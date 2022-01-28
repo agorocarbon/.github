@@ -18,8 +18,6 @@ env:
 jobs:
   code_linter:
     name: Code Linter
-    needs: 
-      - setup_env
     runs-on: ubuntu-latest
     container: node:14
     defaults:
@@ -49,7 +47,6 @@ jobs:
 
   unit_tests:
     name: Unit Tests
-    environment: Testing
     needs:
       - code_linter
     uses: agorocarbon/reusable-workflows/.github/workflows/tests_nodejs.yaml@main
@@ -58,7 +55,6 @@ jobs:
 
   e2e_tests:
     name: E2E Tests
-    environment: Testing
     needs:
       - code_linter
     uses: agorocarbon/reusable-workflows/.github/workflows/tests_nodejs.yaml@main
@@ -123,7 +119,6 @@ jobs:
   deploy:
     name: Deploy App
     if: github.event_name == 'pull_request_target' && github.event.pull_request.merged == true
-    environment: Staging
     needs:
       - build_image
     uses: agorocarbon/reusable-workflows/.github/workflows/deploy.yaml@main
