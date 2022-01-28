@@ -110,7 +110,7 @@ jobs:
 
   deploy:
     name: Deploy App
-    environment: Production
+    environment: Staging
     needs:
       - build_image
     uses: agorocarbon/reusable-workflows/.github/workflows/deploy.yaml@main
