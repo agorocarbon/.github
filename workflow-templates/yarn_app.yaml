@@ -131,4 +131,4 @@ jobs:
       TOKEN: ${{ secrets.GITHUB_TOKEN }}
       AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
       REGISTRY: ${{ secrets.REGISTRY }}
-      CLUSTER_NAME: ${{ secrets. EKS_CLUSTER_NAME }}
+      CLUSTER_NAME: ${{ secrets.EKS_CLUSTER_NAME }}
